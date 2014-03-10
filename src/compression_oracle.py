@@ -30,8 +30,12 @@ class TwoTriesGuess(object):
 		return '%s(%s+%s->%s)' % (self.__class__.__name__, repr(self.prefix), repr(self.letter), 'unknown length' if self.good_length is None else '%u,%u' % (self.good_length, self.bad_length))
 
 	def keep(self):
-		""" return True if this guess resulted in a false positive. """
+		""" return True if the good guess should be kept. """
 		return self.good_length < self.bad_length
+
+	def discard(self):
+		""" return True if the good guess should be discarded. """
+		return self.good_length > self.bad_length
 
 	def run(self):
 		""" implement the logic behind determining the length of this guess """
@@ -54,14 +58,16 @@ class CompressionOracleRunner(threading.Thread):
 
 class CompressionOracle(object):
 
-	def __init__(self, seed, alphabet, max_threads=1):
+	def __init__(self, seed, alphabet, max_threads=1, complement_size=[20,200], retries=5, lookaheads=1):
 		assert max_threads>0, 'max_threads cannot be <= 0'
 		self.seed = seed
 		self.max_threads = max_threads
 		self.alphabet = alphabet
+		self.retries = retries
+		self.lookaheads = lookaheads
+		self.complement_size = complement_size
 
 		self.__tries = []
-		self.__complement_size = 10
 
 		self.retreived_guesses = None
 		return
@@ -78,14 +84,20 @@ class CompressionOracle(object):
 		""" May be overriden by subclasses and cleanup any ressources after running the attack. """
 		return
 
-	def __prepare_complement(self):
+	def prepare_complement(self):
 		""" Prepare an alphabet complement for the Two-Tries method. """
+
+		if type(self.complement_size) in (list, tuple):
+			size = random.randint(*self.complement_size)
+		else:
+			size = self.complement_size
+
 		possible_complement = bytearray([chr(i) for i in range(256)])
 		possible_complement.translate(possible_complement, self.alphabet)
 		if len(possible_complement) != 0:
-			return bytearray(random.sample(possible_complement, self.__complement_size))
+			return bytearray(random.sample(possible_complement, 2) * size)
 
-		return [chr(random.randint(0, 0xff)) for _ in range(self.__complement_size)]
+		return bytearray([chr(random.randint(0, 0xff)) for _ in range(2)] * size)
 
 	def __run_all(self, guesses):
 
@@ -103,7 +115,7 @@ class CompressionOracle(object):
 
 				if len(queue) == 0:
 					break
-			print 'currently %u threads' % (len(threads), )
+			#print 'currently %u threads' % (len(threads), )
 			# wait for some threads to finish
 			while True:
 				threads = [t for t in threads if t.is_alive()]
@@ -120,12 +132,14 @@ class CompressionOracle(object):
 	def run(self):
 		""" run the attack against the comression oracle. """
 
-		complement = self.__prepare_complement()
+		complement = self.prepare_complement()
 		guesses = [self.seed]
 
 		self.prepare()
 
+		retry = 0
 		round = 0
+		lookahead = 0
 		while True:
 
 			# append each letter in the keyspace to our current tries.
@@ -141,22 +155,43 @@ class CompressionOracle(object):
 
 			print 'in round %u, ran all %u guesses in %u seconds' % (round, len(guesses), time.time()-starttime)
 
-			print repr(kept)
+			#print repr(kept)
 			if len(kept) == 0:
 				print "couldn't guess the next letter after %s" % (repr([str(g) for g in oldguesses]), )
-				break
+				if retry >= self.retries:
+					if lookahead >= self.lookaheads:
+						print 'stopping after %u lookahead' % (self.lookaheads, )
+						break
+					else:
+						# when performing lookahead, do not keep the known bad guesses.
+						guesses = [guess for guess in guesses if not guess.discard()]
+						lookahead += 1
+						retry = 0
+						print 'performing lookahead (%u/%u) with %u potential candidates' % (lookahead, self.lookaheads, len(guesses))
+						continue
+				else:
+					retry += 1
+					print 'changing complement (%u/%u) and retrying with old guesses.' % (retry, self.retries)
+					guesses = oldguesses
+					complement = self.prepare_complement()
+					continue
+			else:
+				retry = 0
+				lookahead = 0
 
 			_min = min([len(g) for g in kept])
-			print 'keeping guesses with minimal length: %u' % (_min, )
+			#print 'keeping guesses with minimal length: %u' % (_min, )
 
 			# switch over the new guesses
 			guesses = [g for g in kept if len(g) == _min]
-			print 'after round #%u, kept: %s' % (round, repr(guesses))
+			if len(guesses) > 0:
+				print 'after round #%u, kept: %s+%s' % (round, repr(guesses[0].prefix), repr([guess.letter for guess in guesses]))
+
+			self.retreived_guesses = guesses
 
 			round += 1
 
-		self.retreived_guesses = guesses
 		self.cleanup()
 
-		return guesses
+		return self.retreived_guesses
 

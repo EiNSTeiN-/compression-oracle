@@ -9,8 +9,8 @@ PORT = 30001          # The same port as used by the server
 
 class Client(CompressionOracle):
 
-	def __init__(self, prefix):
-		CompressionOracle.__init__(self, seed=prefix, alphabet=string.printable, max_threads=10)
+	def __init__(self, seed):
+		CompressionOracle.__init__(self, seed=seed, alphabet=string.printable, max_threads=10)
 		self.s = None
 		return
 

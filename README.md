@@ -74,10 +74,10 @@ Let's start setting up the context for this example. You start your program with
 Client(seed='FLAG=', alphabet='abcdef0123456789', complement_size=[1,5], retries=5, lookaheads=1)
 ```
 Lets see what they mean:
-`seed`: means the string `FLAG=` directly precedes the secret you want to recover.
-`alphabet`: means only hexadecimal characters (`abcdef0123456789`) can be part of the secret. If the secret contains any other characters, recovery will most likely fail.
-`complement_size`: means each time a complement has to be chosen, a random number `n` between 1 to 5 will be chosen, as well as two random characters which will be repeated `n` times.
-`lookaheads`: means at most 3-letter guesses will be generated.
+* `seed`: means the string `FLAG=` directly precedes the secret you want to recover.
+* `alphabet`: means only hexadecimal characters (`abcdef0123456789`) can be part of the secret. If the secret contains any other characters, recovery will most likely fail.
+* `complement_size`: means each time a complement has to be chosen, a random number `n` between 1 to 5 will be chosen, as well as two random characters which will be repeated `n` times.
+* `lookaheads`: means at most 3-letter guesses will be generated.
 
 So the recovery process will start. First, a complement will be chosen, which is made up of two letters outside the allowed alphabet, repeated a few times. Let's pretend %$ were chosen, and our random number in the range [1,5] was 3. Our complement is then `%$%$%$`. It's called a *complement* because it does not contain any characters from the alphabet.
 

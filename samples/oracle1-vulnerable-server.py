@@ -1,3 +1,9 @@
+""" Sample server vulnerable to a compression oracle attack.
+
+This is the most basic case, where a secret is compressed together 
+with user data, and the compressed length is leaked somehow.
+"""
+
 import SocketServer
 import zlib
 import os

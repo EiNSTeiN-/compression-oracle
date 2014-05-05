@@ -1,6 +1,7 @@
 import socket
 import struct
 import string
+from common import send_blob, recv_blob
 
 from compression_oracle import CompressionOracle
 
@@ -10,32 +11,30 @@ PORT = 30001          # The same port as used by the server
 class Client(CompressionOracle):
 
 	def __init__(self, seed):
-		CompressionOracle.__init__(self, seed=seed, alphabet=string.printable, max_threads=10)
+		CompressionOracle.__init__(self, seed=seed, 
+			alphabet=string.printable, max_threads=3, 
+			lookaheads=0, retries=2)
 		self.s = None
 		return
 
 	def prepare(self):
 		return
 
+	def prepare_complement(self):
+		return '\x00\xFF'*50
+
 	def oracle(self, data):
 		""" send 'data' to the oracle and retreived the compressed length """
 
-		exceptions = 0
-		while exceptions < 3:
-			try:
-				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-				s.connect((HOST, PORT))
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.connect((HOST, PORT))
 
-				s.sendall(struct.pack('<I', len(data))+data)
-				data = s.recv(4)
-				size, = struct.unpack('<I', data)
-				#print 'Received', repr(size)
+		s.sendall(struct.pack('<I', len(data))+data)
+		data = s.recv(4)
+		size, = struct.unpack('<I', data)
 
-				s.close()
-				return size
-			except:
-				print 'exception occured'
-				exceptions += 1
+		s.close()
+		return size
 
 	def cleanup(self):
 		return

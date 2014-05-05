@@ -146,7 +146,10 @@ class CompressionOracle(object):
 			oldguesses, guesses = guesses, []
 			for guess in oldguesses:
 				for letter in self.alphabet:
-					guesses.append(TwoTriesGuess(self, str(guess), letter, complement))
+					if lookahead > 0:
+						guesses.append(TwoTriesGuess(self, guess.prefix, guess.letter+letter, complement))
+					else:
+						guesses.append(TwoTriesGuess(self, str(guess), letter, complement))
 
 			starttime = time.time()
 

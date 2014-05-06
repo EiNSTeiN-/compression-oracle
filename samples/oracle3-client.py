@@ -21,7 +21,6 @@ class Client(CompressionOracle):
 		CompressionOracle.__init__(self, seed=seed, 
 			alphabet=string.printable, max_threads=1, 
 			lookaheads=0, retries=10, guess_provider=CustomGuessProvider)
-		self.s = None
 		return
 
 	def prepare_complement(self):

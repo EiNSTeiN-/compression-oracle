@@ -14,7 +14,6 @@ class Client(CompressionOracle):
 		CompressionOracle.__init__(self, seed=seed, 
 			alphabet=string.printable, max_threads=3, 
 			lookaheads=0, retries=2)
-		self.s = None
 		return
 
 	def prepare_complement(self):

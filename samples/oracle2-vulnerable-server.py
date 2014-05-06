@@ -12,10 +12,12 @@ import SocketServer
 import zlib
 import os
 import struct
+import random
+import string
 from common import send_blob, recv_blob
 from Crypto.Cipher import DES
 
-secret = "aS45Jhoap1%7xCbgsz*31A"
+secret = ''.join([random.choice(string.printable) for c in range(20)])
 
 def encrypt(data):
     iv = os.urandom(8)
@@ -27,17 +29,15 @@ def encrypt(data):
 class MyTCPHandler(SocketServer.BaseRequestHandler):
 
     def handle(self):
-        # self.request is the TCP socket connected to the client
-
         data = recv_blob(self.request)
-        print repr(data)
         msg = zlib.compress('user_data=%s;secret=%s' % (data, secret))
         send_blob(self.request, encrypt(msg))
-
         return
 
 if __name__ == "__main__":
     HOST, PORT = "0.0.0.0", 30001
+
+    print('THE SECRET IS %s' % repr(secret))
 
     SocketServer.TCPServer.allow_reuse_address = True
     server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)

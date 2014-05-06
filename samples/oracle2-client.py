@@ -17,9 +17,6 @@ class Client(CompressionOracle):
 		self.s = None
 		return
 
-	def prepare(self):
-		return
-
 	def prepare_complement(self):
 		return '\x00\xFF'*50
 

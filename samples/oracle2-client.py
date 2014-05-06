@@ -1,5 +1,4 @@
 import socket
-import struct
 import string
 from common import send_blob, recv_blob
 

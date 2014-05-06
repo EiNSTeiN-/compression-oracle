@@ -11,7 +11,6 @@ multiple of the block length, 8 bytes in this case.
 import SocketServer
 import zlib
 import os
-import struct
 import random
 import string
 from common import send_blob, recv_blob

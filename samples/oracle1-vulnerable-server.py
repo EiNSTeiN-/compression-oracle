@@ -6,7 +6,6 @@ with user data, and the compressed length is leaked somehow.
 
 import SocketServer
 import zlib
-import os
 import struct
 import random
 import string

@@ -48,6 +48,10 @@ class TwoTriesGuess(object):
 
 class TwoTriesBlockCipherGuess(TwoTriesGuess):
 
+	def range(self):
+		""" Default range for 8 or 16 bytes block cipher. """
+		return range(0, 20)
+
 	def guesses(self, uncompressible_bytes):
 		good = self.oracle.oracle(uncompressible_bytes+self.prefix+self.letter+self.complement)
 		bad = self.oracle.oracle(uncompressible_bytes+self.prefix+self.complement+self.letter)
@@ -63,7 +67,7 @@ class TwoTriesBlockCipherGuess(TwoTriesGuess):
 			self.good_length, self.bad_length = ref
 			return
 
-		for n in range(30):
+		for n in self.range():
 			bytes = self.oracle.get_uncompressible_bytes(n)
 			this = this_good, this_bad = self.guesses(uncompressible_bytes=bytes)
 			if this_good != ref_good or this_bad != ref_bad:

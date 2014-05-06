@@ -46,6 +46,34 @@ class TwoTriesGuess(object):
 
 		return
 
+class TwoTriesBlockCipherGuess(TwoTriesGuess):
+
+	def guesses(self, uncompressible_bytes):
+		good = self.oracle.oracle(uncompressible_bytes+self.prefix+self.letter+self.complement)
+		bad = self.oracle.oracle(uncompressible_bytes+self.prefix+self.complement+self.letter)
+		return good, bad
+
+	def run(self):
+		""" implement the logic behind determining the length of this guess """
+		#print 'guess', self.prefix, self.letter
+
+		ref = ref_good, ref_bad = self.guesses(uncompressible_bytes='')
+		if ref_good != ref_bad:
+			#print 'keep ref', repr(ref)
+			self.good_length, self.bad_length = ref
+			return
+
+		for n in range(30):
+			bytes = self.oracle.get_uncompressible_bytes(n)
+			this = this_good, this_bad = self.guesses(uncompressible_bytes=bytes)
+			if this_good != ref_good or this_bad != ref_bad:
+				self.good_length, self.bad_length = this
+				#print 'keep this', n, repr(ref), '->', repr(this)
+				return
+
+		#print 'not found'
+		return
+
 class CompressionOracleRunner(threading.Thread):
 
 	def __init__(self, guess):
@@ -58,7 +86,7 @@ class CompressionOracleRunner(threading.Thread):
 
 class CompressionOracle(object):
 
-	def __init__(self, seed, alphabet, max_threads=1, complement_size=[20,200], retries=5, lookaheads=1):
+	def __init__(self, seed, alphabet, max_threads=1, complement_size=[20,200], retries=5, lookaheads=1, guess_provider=TwoTriesGuess):
 		assert max_threads>0, 'max_threads cannot be <= 0'
 		self.seed = seed
 		self.max_threads = max_threads
@@ -70,6 +98,7 @@ class CompressionOracle(object):
 		self.__tries = []
 
 		self.retreived_guesses = None
+		self.guess_provider = guess_provider
 		return
 
 	def oracle(self):
@@ -83,6 +112,23 @@ class CompressionOracle(object):
 	def cleanup(self):
 		""" May be overriden by subclasses and cleanup any ressources after running the attack. """
 		return
+
+	def get_uncompressible_bytes(self, length):
+		""" This must return a string which should not compress well. It could 
+			be random data or it could be a sequence of bytes garanteed to not
+			contain any repetition.
+
+			Subclasses can override this method, the default implementation 
+			returns a random string of letters complementary to the alphabet.
+		"""
+
+		possible_complement = bytearray([chr(i) for i in range(256)])
+		possible_complement.translate(possible_complement, self.alphabet)
+		if len(possible_complement) == 0:
+			possible_complement = bytearray([chr(i) for i in range(256)])
+
+		return bytearray([chr(random.choice(possible_complement)) for _ in range(length)])
+		
 
 	def prepare_complement(self):
 		""" Prepare an alphabet complement for the Two-Tries method. """
@@ -147,9 +193,9 @@ class CompressionOracle(object):
 			for guess in oldguesses:
 				for letter in self.alphabet:
 					if lookahead > 0:
-						guesses.append(TwoTriesGuess(self, guess.prefix, guess.letter+letter, complement))
+						guesses.append(self.guess_provider(self, guess.prefix, guess.letter+letter, complement))
 					else:
-						guesses.append(TwoTriesGuess(self, str(guess), letter, complement))
+						guesses.append(self.guess_provider(self, str(guess), letter, complement))
 
 			starttime = time.time()
 

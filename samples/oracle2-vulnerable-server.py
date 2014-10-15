@@ -1,6 +1,6 @@
 """ Sample server vulnerable to a compression oracle attack.
 
-This is an example of compressed data being encrypted using a 
+This is an example of compressed data being encrypted using a
 block cipher, and the ciphertext length is leaked somehow.
 
 Because of the nature of block ciphers, the compressed length
@@ -19,25 +19,25 @@ from Crypto.Cipher import DES
 secret = ''.join([random.choice(string.printable) for c in range(20)])
 
 def encrypt(data):
-    iv = os.urandom(8)
-    des = DES.new('01234567', DES.MODE_CBC, iv)
-    data += '\x00' * (8 - len(data) % 8)
-    ciphertext = iv + des.encrypt(data)
-    return ciphertext
+  iv = os.urandom(8)
+  des = DES.new('01234567', DES.MODE_CBC, iv)
+  data += '\x00' * (8 - len(data) % 8)
+  ciphertext = iv + des.encrypt(data)
+  return ciphertext
 
 class MyTCPHandler(SocketServer.BaseRequestHandler):
 
-    def handle(self):
-        data = recv_blob(self.request)
-        msg = zlib.compress('user_data=%s;secret=%s' % (data, secret))
-        send_blob(self.request, encrypt(msg))
-        return
+  def handle(self):
+    data = recv_blob(self.request)
+    msg = zlib.compress('user_data=%s;secret=%s' % (data, secret))
+    send_blob(self.request, encrypt(msg))
+    return
 
 if __name__ == "__main__":
-    HOST, PORT = "0.0.0.0", 30001
+  HOST, PORT = "0.0.0.0", 30001
 
-    print('THE SECRET IS %s' % repr(secret))
+  print('THE SECRET IS %s' % repr(secret))
 
-    SocketServer.TCPServer.allow_reuse_address = True
-    server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
-    server.serve_forever()
+  SocketServer.TCPServer.allow_reuse_address = True
+  server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
+  server.serve_forever()

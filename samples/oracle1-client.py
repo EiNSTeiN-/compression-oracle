@@ -10,30 +10,30 @@ PORT = 30001          # The same port as used by the server
 
 class Client(CompressionOracle):
 
-	def __init__(self, seed):
-		CompressionOracle.__init__(self, seed=seed, 
-			alphabet=string.printable, max_threads=3, 
-			lookaheads=0, retries=2)
-		return
+  def __init__(self, seed):
+    CompressionOracle.__init__(self, seed=seed,
+      alphabet=string.printable, max_threads=3,
+      lookaheads=0, retries=2)
+    return
 
-	def prepare_complement(self):
-		return '\x00\xFF'*50
+  def prepare_complement(self):
+    return '\x00\xFF'*50
 
-	def oracle(self, data):
-		""" send 'data' to the oracle and retreived the compressed length """
+  def oracle(self, data):
+    """ send 'data' to the oracle and retreived the compressed length """
 
-		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		s.connect((HOST, PORT))
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((HOST, PORT))
 
-		s.sendall(struct.pack('<I', len(data))+data)
-		data = s.recv(4)
-		size, = struct.unpack('<I', data)
+    s.sendall(struct.pack('<I', len(data))+data)
+    data = s.recv(4)
+    size, = struct.unpack('<I', data)
 
-		s.close()
-		return size
+    s.close()
+    return size
 
-	def cleanup(self):
-		return
+  def cleanup(self):
+    return
 
 c = Client(seed='secret=')
 c.run()

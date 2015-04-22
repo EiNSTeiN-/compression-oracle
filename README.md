@@ -1,7 +1,7 @@
 compression-oracle
 ==================
 
-Python framework for extracting secret data from compression oracles such as those exploited by the BEAST and CRIME attacks.
+Python framework for extracting secret data from compression oracles such as those exploited by the BREACH and CRIME attacks.
 
 What does it do?
 ----------------
